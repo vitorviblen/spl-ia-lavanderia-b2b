@@ -17,9 +17,6 @@ export default function Login() {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // Check if Supabase is configured
-  const isSupabaseConfigured = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
   useEffect(() => {
     if (user) {
       navigate('/dashboard');
@@ -62,18 +59,6 @@ export default function Login() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-primary/5 to-background p-4">
-      {!isSupabaseConfigured && (
-        <Card className="w-full max-w-md mb-4 border-amber-500/50 bg-amber-50">
-          <CardContent className="pt-6">
-            <div className="text-center space-y-2">
-              <p className="font-medium text-amber-900">⚠️ Supabase não configurado</p>
-              <p className="text-sm text-amber-800">
-                Conecte o Lovable Cloud ou adicione as chaves do Supabase para habilitar autenticação.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      )}
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="mx-auto mb-4 h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
