@@ -1,8 +1,11 @@
+import { useEffect, useState } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/lib/supabase';
 import { MainLayout } from '@/components/Layout/MainLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Check, CreditCard } from 'lucide-react';
+import { CreditCard } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 const plans = [
   {
@@ -44,74 +47,55 @@ const plans = [
   },
 ];
 
+interface AssinaturaData {
+  assinatura_status: string;
+  data_vencimento: string;
+  data_cancelamento: string | null;
+  valor_mensal: number;
+}
+
 export default function Assinatura() {
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [assinatura, setAssinatura] = useState<AssinaturaData | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!user) return;
+    const fetchData = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('lavanderias')
+          .select('assinatura_status, data_vencimento, data_cancelamento, valor_mensal')
+          .eq('email_usuario', user.email)
+          .single();
+        if (error) throw error;
+        setAssinatura(data);
+      } catch (error) {
+        toast({ variant: 'destructive', title: 'Erro', description: 'Erro ao carregar.' });
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, [user, toast]);
+
+  const handlePagamento = () => window.open(`https://pay.cakto.com.br/renovar-splia?email=${user?.email}`, '_blank');
+
+  if (loading) return <MainLayout><div className="flex items-center justify-center min-h-[400px]"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div></div></MainLayout>;
+
   return (
     <MainLayout>
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold">Assinatura</h1>
-          <p className="text-muted-foreground mt-2">
-            Gerencie seu plano e pagamento
-          </p>
-        </div>
-
+        <h1 className="text-3xl font-bold">Assinatura</h1>
         <Card>
           <CardHeader>
-            <CardTitle>Plano Atual</CardTitle>
-            <CardDescription>
-              Seu plano e status de pagamento
-            </CardDescription>
+            <CardTitle>Status: {assinatura?.assinatura_status}</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-medium">Plano Trial</p>
-                <p className="text-sm text-muted-foreground">Válido até 30 dias após cadastro</p>
-              </div>
-              <Badge variant="secondary">Ativo</Badge>
-            </div>
-            <Button className="w-full">
-              <CreditCard className="h-4 w-4 mr-2" />
-              Assinar Plano
-            </Button>
+          <CardContent>
+            <Button onClick={handlePagamento}><CreditCard className="mr-2" />Pagar</Button>
           </CardContent>
         </Card>
-
-        <div>
-          <h2 className="text-2xl font-bold mb-4">Escolha seu Plano</h2>
-          <div className="grid gap-6 lg:grid-cols-3">
-            {plans.map((plan) => (
-              <Card key={plan.name} className={plan.recommended ? 'border-primary shadow-lg' : ''}>
-                <CardHeader>
-                  {plan.recommended && (
-                    <Badge className="w-fit mb-2">Recomendado</Badge>
-                  )}
-                  <CardTitle>{plan.name}</CardTitle>
-                  <div className="mt-4">
-                    <span className="text-3xl font-bold">{plan.price}</span>
-                    <span className="text-muted-foreground">{plan.period}</span>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <ul className="space-y-2">
-                    {plan.features.map((feature) => (
-                      <li key={feature} className="flex items-start gap-2">
-                        <Check className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-                        <span className="text-sm">{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
-                  <Button 
-                    className="w-full" 
-                    variant={plan.recommended ? 'default' : 'outline'}
-                  >
-                    Selecionar Plano
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
       </div>
     </MainLayout>
   );
